@@ -1,8 +1,8 @@
 import React from 'react';
 import omit from 'lodash/omit';
-
 import CrumbTable from 'app/components/events/interfaces/breadcrumbs/crumbTable';
 import SummaryLine from 'app/components/events/interfaces/breadcrumbs/summaryLine';
+
 import ExternalLink from 'app/components/links/externalLink';
 import {getMeta} from 'app/components/events/meta/metaProxy';
 import {t} from 'app/locale';
