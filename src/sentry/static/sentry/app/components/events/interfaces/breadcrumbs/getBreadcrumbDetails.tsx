@@ -40,8 +40,7 @@ function getBreadcrumbDetails(breadcrumbType: BreadcrumbType): BreadcrumbDetails
       };
     }
     case 'exception':
-    case 'message':
-    case 'error': {
+    case 'message': {
       return {
         color: 'red',
         icon: IconWarning,

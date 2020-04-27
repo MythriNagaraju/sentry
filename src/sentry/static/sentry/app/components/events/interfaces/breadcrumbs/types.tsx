@@ -1,20 +1,11 @@
 import {Color} from 'app/utils/theme';
 import {IconProps} from 'app/types/iconProps';
 
-type BreadcrumbCategory =
-  | 'started'
-  | 'UIViewController'
-  | 'touch'
-  | 'message'
-  | 'ui.click'
-  | 'xhr'
-  | 'console';
-
 export type BreadcrumbLevel = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
 
 type BreadcrumbTypeBase = {
   timestamp?: string; //it's recommended
-  category?: BreadcrumbCategory;
+  category?: string;
   message?: string;
   level?: BreadcrumbLevel;
   event_id?: string;
@@ -49,7 +40,6 @@ export type BreadcrumbTypeHTTP = {
 
 export type BreadcrumbTypeDefault = {
   type:
-    | 'error'
     | 'info'
     | 'debug'
     | 'message'

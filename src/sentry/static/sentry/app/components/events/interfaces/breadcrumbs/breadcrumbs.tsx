@@ -70,25 +70,25 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
     }
 
     const breadcrumbTypes: Array<FilterGroupType> = [];
-    //const breadcrumbLevels: Array<FilterGroupLevel> = [];
+    const breadcrumbLevels: Array<FilterGroupLevel> = [];
 
     const convertedBreadcrumbs = breadcrumbs.map((breadcrumb, index) => {
       const convertedBreadcrumb = convertBreadcrumbType(breadcrumb);
       const breadcrumbDetails = getBreadcrumbDetails(convertedBreadcrumb.type);
 
-      // if (
-      //   convertedBreadcrumb?.level &&
-      //   !breadcrumbLevels.find(
-      //     breadcrumbLevel => breadcrumbLevel.type === convertedBreadcrumb?.level
-      //   )
-      // ) {
-      //   breadcrumbLevels.push({
-      //     groupType: 'level',
-      //     type: convertedBreadcrumb?.level,
-      //     isChecked: true,
-      //     description: 'X',
-      //   });
-      // }
+      if (
+        convertedBreadcrumb?.level &&
+        !breadcrumbLevels.find(
+          breadcrumbLevel => breadcrumbLevel.type === convertedBreadcrumb?.level
+        )
+      ) {
+        breadcrumbLevels.push({
+          groupType: 'level',
+          type: convertedBreadcrumb?.level,
+          isChecked: true,
+          description: 'X',
+        });
+      }
 
       if (!breadcrumbTypes.find(b => b.type === convertedBreadcrumb.type)) {
         !breadcrumbTypes.push({
@@ -110,7 +110,7 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
       breadcrumbs: convertedBreadcrumbs,
       filteredBreadcrumbs: convertedBreadcrumbs,
       filteredBreadcrumbsByCustomSearch: convertedBreadcrumbs,
-      breadcrumbFilterGroups: [...breadcrumbTypes],
+      breadcrumbFilterGroups: [...breadcrumbTypes, ...breadcrumbLevels],
     });
   };
 
@@ -137,7 +137,7 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
     if (exception) {
       const {type, value, module: mdl} = exception.data.values[0];
       return {
-        type: 'error',
+        type: 'exception',
         level: 'error',
         category: this.moduleToCategory(mdl) || 'exception',
         data: {

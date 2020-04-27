@@ -68,7 +68,9 @@ class SearchBar extends React.PureComponent<Props, State> {
   };
 
   onQueryChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({query: evt.target.value});
+    this.setState({query: evt.target.value}, () => {
+      this.props.onSearch(this.state.query);
+    });
   };
 
   render() {
