@@ -119,6 +119,7 @@ class IssueListSearchBar extends React.Component {
       tagValueLoader, // eslint-disable-line no-unused-vars
       savedSearch,
       onSidebarToggle,
+      supportedTags,
       ...props
     } = this.props;
 
@@ -135,7 +136,7 @@ class IssueListSearchBar extends React.Component {
         onSavedRecentSearch={this.handleSavedRecentSearch}
         onSidebarToggle={onSidebarToggle}
         pinnedSearch={savedSearch && savedSearch.isPinned ? savedSearch : null}
-        {...props}
+        supportedTags={supportedTags}
       />
     );
   }

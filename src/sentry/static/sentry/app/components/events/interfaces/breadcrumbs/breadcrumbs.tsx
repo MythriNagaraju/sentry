@@ -7,23 +7,34 @@ import EmptyStateWarning from 'app/components/emptyStateWarning';
 import {t} from 'app/locale';
 import {Event} from 'app/types';
 import space from 'app/styles/space';
+import SearchBar from 'app/components/searchBar';
+import {IconProps} from 'app/types/iconProps';
 
 import {PlatformContextProvider} from './platformContext';
-import BreadCrumbsSearch from './breadcrumbsSearch';
 import BreadcrumbTime from './breadcrumbTime';
 import BreadcrumbCollapsed from './breadcrumbCollapsed';
+import BreadcrumbRenderer from './breadcrumbRenderer';
 import convertBreadcrumbType from './convertBreadcrumbType';
 import getBreadcrumbDetails from './getBreadcrumbDetails';
-import {Breadcrumb} from './types';
+import BreadcrumbFilter from './breadcrumbFilter/breadcrumbFilter';
+import {FilterGroupLevel, FilterGroupType} from './breadcrumbFilter/types';
+import {Breadcrumb, BreadcrumbDetails} from './types';
 import {BreadCrumb, BreadCrumbIconWrapper} from './styles';
 
 const MAX_CRUMBS_WHEN_COLLAPSED = 10;
 
+type BreadcrumbWithDetails = Breadcrumb & BreadcrumbDetails & {id: number};
+type BreadcrumbFilterGroups = React.ComponentProps<
+  typeof BreadcrumbFilter
+>['filterGroups'];
+
 type State = {
   isCollapsed: boolean;
   searchTerm: string;
-  breadcrumbs: Array<Breadcrumb>;
-  filteredBreadcrumbs: Array<Breadcrumb>;
+  breadcrumbs: Array<BreadcrumbWithDetails>;
+  filteredBreadcrumbsByCustomSearch: Array<BreadcrumbWithDetails>;
+  filteredBreadcrumbs: Array<BreadcrumbWithDetails>;
+  breadcrumbFilterGroups: BreadcrumbFilterGroups;
 };
 
 type Props = {
@@ -39,26 +50,67 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
     isCollapsed: true,
     searchTerm: '',
     breadcrumbs: [],
+    filteredBreadcrumbsByCustomSearch: [],
     filteredBreadcrumbs: [],
+    breadcrumbFilterGroups: [],
   };
 
   componentDidMount() {
-    this.loadCrumbs();
+    this.loadBreadcrumbs();
   }
 
-  loadCrumbs = () => {
+  loadBreadcrumbs = () => {
     const {data} = this.props;
     let breadcrumbs = data.values;
 
     // Add the error event as the final (virtual) breadcrumb
     const virtualCrumb = this.getVirtualCrumb();
     if (virtualCrumb) {
-      breadcrumbs = [...data.values, virtualCrumb];
+      breadcrumbs = [...breadcrumbs, virtualCrumb];
     }
 
+    const breadcrumbTypes: Array<FilterGroupType> = [];
+    //const breadcrumbLevels: Array<FilterGroupLevel> = [];
+
+    const convertedBreadcrumbs = breadcrumbs.map((breadcrumb, index) => {
+      const convertedBreadcrumb = convertBreadcrumbType(breadcrumb);
+      const breadcrumbDetails = getBreadcrumbDetails(convertedBreadcrumb.type);
+
+      // if (
+      //   convertedBreadcrumb?.level &&
+      //   !breadcrumbLevels.find(
+      //     breadcrumbLevel => breadcrumbLevel.type === convertedBreadcrumb?.level
+      //   )
+      // ) {
+      //   breadcrumbLevels.push({
+      //     groupType: 'level',
+      //     type: convertedBreadcrumb?.level,
+      //     isChecked: true,
+      //     description: 'X',
+      //   });
+      // }
+
+      if (!breadcrumbTypes.find(b => b.type === convertedBreadcrumb.type)) {
+        !breadcrumbTypes.push({
+          groupType: 'type',
+          type: convertedBreadcrumb.type,
+          ...breadcrumbDetails,
+          isChecked: true,
+        });
+      }
+
+      return {
+        id: index,
+        ...convertedBreadcrumb,
+        ...breadcrumbDetails,
+      };
+    });
+
     this.setState({
-      breadcrumbs,
-      filteredBreadcrumbs: breadcrumbs,
+      breadcrumbs: convertedBreadcrumbs,
+      filteredBreadcrumbs: convertedBreadcrumbs,
+      filteredBreadcrumbsByCustomSearch: convertedBreadcrumbs,
+      breadcrumbFilterGroups: [...breadcrumbTypes],
     });
   };
 
@@ -108,7 +160,7 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
   };
 
   getCollapsedCrumbQuantity = (): {
-    filteredCollapsedBreadcrumbs: Array<Breadcrumb>;
+    filteredCollapsedBreadcrumbs: Array<BreadcrumbWithDetails>;
     collapsedQuantity: number;
   } => {
     const {isCollapsed, filteredBreadcrumbs} = this.state;
@@ -127,15 +179,45 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
     };
   };
 
-  handleChangeSearchTerm = (searchTerm: string) => {
-    const {breadcrumbs} = this.state;
+  handleFilter = (breadcrumbFilterGroups: BreadcrumbFilterGroups) => () => {
+    //types
+    const breadcrumbFilterGroupTypes = breadcrumbFilterGroups.filter(
+      breadcrumbFilterGroup => breadcrumbFilterGroup.groupType === 'type'
+    );
 
-    const filteredBreadcrumbs = breadcrumbs.filter(
+    //levels
+    const breadcrumbFilterGroupLevels = breadcrumbFilterGroups
+      .filter(breadcrumbFilterGroup => breadcrumbFilterGroup.groupType === 'level')
+      .map(breadcrumbFilterGroup => breadcrumbFilterGroup.type);
+
+    this.setState({
+      filteredBreadcrumbs: this.state.breadcrumbs.filter(breadcrumb => {
+        const foundBreadcrumbFilterData = breadcrumbFilterGroupTypes.find(
+          crumbFilterData => crumbFilterData.type === breadcrumb.type
+        );
+        if (foundBreadcrumbFilterData) {
+          return foundBreadcrumbFilterData.isChecked;
+        }
+
+        return false;
+      }),
+      breadcrumbFilterGroups,
+    });
+  };
+
+  handleFilterBySearchTerm = (value: string) => {
+    const {filteredBreadcrumbsByCustomSearch} = this.state;
+
+    const searchTerm = value.toLocaleLowerCase();
+
+    const filteredBreadcrumbs = filteredBreadcrumbsByCustomSearch.filter(
       item =>
-        // return true if any of category, message, or level contain queryValue
-        !!['category', 'message', 'level'].find(prop => {
-          const propValue = (item[prop] || '').toLowerCase();
-          return propValue.includes(searchTerm);
+        !!['category', 'message', 'level', 'timestamp'].find(prop => {
+          const searchValue = item[prop];
+          if (searchValue) {
+            return searchValue.toLowerCase().indexOf(searchTerm) !== -1;
+          }
+          return false;
         })
     );
 
@@ -160,7 +242,8 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
 
   render() {
     const {event, type} = this.props;
-    const {searchTerm} = this.state;
+    const {breadcrumbFilterGroups, searchTerm} = this.state;
+
     const {
       collapsedQuantity,
       filteredCollapsedBreadcrumbs,
@@ -177,11 +260,17 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
           </h3>
         }
         actions={
-          <BreadCrumbsSearch
-            searchTerm={searchTerm}
-            onChangeSearchTerm={this.handleChangeSearchTerm}
-            onClearSearchTerm={this.handleCleanSearch}
-          />
+          <Search>
+            <BreadcrumbFilter
+              onFilter={this.handleFilter}
+              filterGroups={breadcrumbFilterGroups}
+            />
+            <StyledSearchBar
+              placeholder={t('Search breadcrumbs...')}
+              onSearch={this.handleFilterBySearchTerm}
+              query={searchTerm}
+            />
+          </Search>
         }
         wrapTitle={false}
       >
@@ -195,29 +284,24 @@ class BreadcrumbsContainer extends React.Component<Props, State> {
                     quantity={collapsedQuantity}
                   />
                 )}
-                {filteredCollapsedBreadcrumbs.map((crumb, idx) => {
-                  const convertedBreadcrumb = convertBreadcrumbType(crumb);
-                  const {color, borderColor, icon, renderer} = getBreadcrumbDetails(
-                    convertedBreadcrumb
-                  );
-
-                  return (
-                    <BreadCrumb
-                      data-test-id="breadcrumb"
-                      key={idx}
-                      hasError={
-                        convertedBreadcrumb.type === 'message' ||
-                        convertedBreadcrumb.type === 'error'
-                      }
-                    >
-                      <BreadCrumbIconWrapper color={color} borderColor={borderColor}>
-                        {icon}
-                      </BreadCrumbIconWrapper>
-                      {renderer}
-                      <BreadcrumbTime timestamp={crumb.timestamp} />
-                    </BreadCrumb>
-                  );
-                })}
+                {filteredCollapsedBreadcrumbs.map(
+                  ({color, borderColor, icon, ...crumb}, idx) => {
+                    const Icon = icon as React.ComponentType<IconProps>;
+                    return (
+                      <BreadCrumb
+                        data-test-id="breadcrumb"
+                        key={idx}
+                        hasError={crumb.type === 'message' || crumb.type === 'error'}
+                      >
+                        <BreadCrumbIconWrapper color={color} borderColor={borderColor}>
+                          <Icon />
+                        </BreadCrumbIconWrapper>
+                        <BreadcrumbRenderer breadcrumb={crumb as Breadcrumb} />
+                        <BreadcrumbTime timestamp={crumb.timestamp} />
+                      </BreadCrumb>
+                    );
+                  }
+                )}
               </BreadCrumbs>
             </PlatformContextProvider>
           ) : (
@@ -244,4 +328,18 @@ const Content = styled('div')`
   border-radius: 3px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   margin-bottom: ${space(3)};
+`;
+
+const Search = styled('div')`
+  display: flex;
+  width: 600px;
+`;
+
+const StyledSearchBar = styled(SearchBar)`
+  width: 100%;
+  .search-input,
+  .search-input:focus {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 `;
