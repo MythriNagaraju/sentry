@@ -86,7 +86,7 @@ default_manager.add("organizations:onboarding", OrganizationFeature)  # NOQA
 default_manager.add("organizations:org-saved-searches", OrganizationFeature)  # NOQA
 default_manager.add("organizations:relay", OrganizationFeature)  # NOQA
 default_manager.add("organizations:rule-page", OrganizationFeature)  # NOQA
-default_manager.add("organizations:datascrubbers-v2", OrganizationFeature)  # NOQA
+default_manager.add("organizations:datascrubbers-v2", OrganizationFeature)  # NOQA # NOQA
 default_manager.add("organizations:sso-basic", OrganizationFeature)  # NOQA
 default_manager.add("organizations:sso-rippling", OrganizationFeature)  # NOQA
 default_manager.add("organizations:sso-saml2", OrganizationFeature)  # NOQA
@@ -94,6 +94,7 @@ default_manager.add("organizations:grouping-info", OrganizationFeature)  # NOQA
 default_manager.add("organizations:tweak-grouping-config", OrganizationFeature)  # NOQA
 default_manager.add("organizations:set-grouping-config", OrganizationFeature)  # NOQA
 default_manager.add("organizations:org-subdomains", OrganizationFeature)  # NOQA
+default_manager.add("organizations:breadcrumbs-v2", OrganizationFeature) # NOQA
 
 # Project scoped features
 default_manager.add("projects:custom-inbound-filters", ProjectFeature)  # NOQA
@@ -106,6 +107,7 @@ default_manager.add("projects:sample-events", ProjectFeature)  # NOQA
 default_manager.add("projects:servicehooks", ProjectFeature)  # NOQA
 default_manager.add("projects:similarity-view", ProjectFeature)  # NOQA
 default_manager.add("projects:similarity-indexing", ProjectFeature)  # NOQA
+
 
 # Project plugin features
 default_manager.add("projects:plugins", ProjectPluginFeature)  # NOQA
